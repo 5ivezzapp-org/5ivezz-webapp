@@ -16,11 +16,30 @@ jobs:
       uses: shivammathur/setup-php@v2
       with:
         php-version: '8.3'
-        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, fileinfo
+        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, fileinfo, zip
         coverage: none
     
     - name: Install Composer dependencies
       run: composer install --no-dev --prefer-dist --no-progress --no-interaction
+    
+    - name: Create deployment zip
+      run: |
+        # Create zip of everything except unnecessary files
+        zip -r deploy.zip . \
+          -x "*.git/*" \
+          -x "*.github/*" \
+          -x "node_modules/*" \
+          -x "tests/*" \
+          -x "storage/logs/*" \
+          -x ".env" \
+          -x ".gitignore" \
+          -x "composer.json" \
+          -x "composer.lock" \
+          -x "package.json" \
+          -x "package-lock.json" \
+          -x "phpunit.xml" \
+          -x "README.md" \
+          -x "deploy.zip"
     
     - name: Deploy via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
@@ -43,16 +62,16 @@ jobs:
           .gitignore
           composer.json
           composer.lock
-          package-lock.json
           package.json
+          package-lock.json
           phpunit.xml
+          README.md
+          deploy.zip
           .env.example
           .editorconfig
           .gitattributes
           docker-compose.yml
           dockerfile
-          README.md
-          .gitignore
           vite.config.js
           tailwind.config.js
           postcss.config.js
