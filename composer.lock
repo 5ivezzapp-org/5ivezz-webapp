@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "cda2add6397422fb1a2eb5b9207f1575",
+    "content-hash": "3dbc9fc506ed68ec0b25de9961109e92",
     "packages": [
         {
             "name": "brick/math",
@@ -6143,6 +6143,67 @@
         }
     ],
     "packages-dev": [
+        {
+            "name": "cocomedia-nl/laravel-directadmin-deploy",
+            "version": "0.1.8",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/cocomedia-nl/laravel-directadmin-deploy.git",
+                "reference": "73d51f19d2b129d5e5054af1b57e3268a2141bf7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/cocomedia-nl/laravel-directadmin-deploy/zipball/73d51f19d2b129d5e5054af1b57e3268a2141bf7",
+                "reference": "73d51f19d2b129d5e5054af1b57e3268a2141bf7",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/console": "^11.0|^12.0|^13.0",
+                "illuminate/process": "^11.0|^12.0|^13.0",
+                "illuminate/support": "^11.0|^12.0|^13.0",
+                "php": "^8.2",
+                "symfony/console": "^7.0"
+            },
+            "require-dev": {
+                "orchestra/testbench": "^8.0|^9.0|^10.0",
+                "phpunit/phpunit": "^12.5.23"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "CocomediaNL\\LaravelDirectAdminDeploy\\DirectAdminDeployServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "CocomediaNL\\LaravelDirectAdminDeploy\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Cocomedia",
+                    "email": "info@cocomedia.nl"
+                }
+            ],
+            "description": "Laravel package for automated DirectAdmin deployment with GitHub Actions support",
+            "keywords": [
+                "deployment",
+                "directadmin",
+                "github-actions",
+                "laravel",
+                "ssh"
+            ],
+            "support": {
+                "source": "https://github.com/cocomedia-nl/laravel-directadmin-deploy/tree/0.1.8"
+            },
+            "time": "2026-04-20T13:42:12+00:00"
+        },
         {
             "name": "fakerphp/faker",
             "version": "v1.24.1",

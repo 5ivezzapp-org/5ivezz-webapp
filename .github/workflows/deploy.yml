@@ -1,0 +1,64 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.3'
+        extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, bcmath, soap, intl, gd, exif, iconv, fileinfo
+        coverage: none
+    
+    - name: Install Composer dependencies
+      run: composer install --no-dev --prefer-dist --no-progress --no-interaction
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Install NPM dependencies
+      run: npm ci
+    
+    - name: Build assets
+      run: npm run build
+    
+    - name: Deploy via FTP
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+      with:
+        server: ${{ secrets.FTP_HOST }}
+        username: ${{ secrets.FTP_USERNAME }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        protocol: ftp
+        port: 21
+        local-dir: ./
+        server-dir: public_html/
+        exclude: |
+          .git/**
+          .github/**
+          .env
+          node_modules/**
+          tests/**
+          storage/logs/**
+          .gitignore
+          composer.json
+          composer.lock
+          package-lock.json
+          phpunit.xml
+          .env.example
+          .editorconfig
+          .gitattributes
+          docker-compose.yml
+          dockerfile
+          README.md
+          .gitignore
