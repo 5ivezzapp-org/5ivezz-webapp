@@ -22,17 +22,6 @@ jobs:
     - name: Install Composer dependencies
       run: composer install --no-dev --prefer-dist --no-progress --no-interaction
     
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '22'  # Changed from 20 to 22
-    
-    - name: Install NPM dependencies
-      run: npm ci
-    
-    - name: Build assets
-      run: npm run build
-    
     - name: Deploy via FTP
       uses: SamKirkland/FTP-Deploy-Action@v4.3.4
       with:
@@ -43,6 +32,7 @@ jobs:
         port: 21
         local-dir: ./
         server-dir: public_html/
+        passive: true
         exclude: |
           .git/**
           .github/**
@@ -54,6 +44,7 @@ jobs:
           composer.json
           composer.lock
           package-lock.json
+          package.json
           phpunit.xml
           .env.example
           .editorconfig
@@ -62,3 +53,7 @@ jobs:
           dockerfile
           README.md
           .gitignore
+          vite.config.js
+          tailwind.config.js
+          postcss.config.js
+          webpack.mix.js
