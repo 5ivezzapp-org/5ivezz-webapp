@@ -38,7 +38,7 @@ class AuthController extends Controller
             'password' => 'required|string|min:8|confirmed',
             'company_name' => 'nullable|string|max:255',
             'state' => 'required|string|max:100',
-            'city' => 'required|string|max:100', 
+            'city' => 'required|string|max:100',
             'cac_document' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'company_logo' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             'terms' => 'accepted',
@@ -125,27 +125,94 @@ class AuthController extends Controller
         return redirect()->route('organizer.login');
     }
 
-    /**
-     * Show organizer dashboard.
-     */
     public function dashboard()
     {
         $organizer = Auth::guard('organizer')->user();
-        return view('organizer.dashboard', compact('organizer'));
+
+        // Get all tournaments (paginated preview)
+        $tournaments = \App\Models\Tournament::byOrganizer($organizer->id)
+            ->withCount('approvedTeams as teams_count')
+            ->orderBy('created_at', 'desc')
+            ->limit(6)
+            ->get();
+
+        // Add cover image fallback
+        $tournaments->transform(function ($t) {
+            $t->cover_image_url = $t->cover_image
+                ? asset('storage/' . $t->cover_image)
+                : 'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=600&h=400&fit=crop';
+            return $t;
+        });
+
+        // Pending registrations across all this organizer's tournaments
+        $pendingRegistrations = \App\Models\Team::whereHas('tournaments', function ($q) use ($organizer) {
+            $q->where('tournaments.organizer_id', $organizer->id)
+                ->where('tournament_team.status', 'pending');
+        })
+            ->with([
+                'tournaments' => function ($q) use ($organizer) {
+                    $q->where('tournaments.organizer_id', $organizer->id);
+                }
+            ])
+            ->limit(5)
+            ->get();
+
+        // Counters for the stats grid
+        $stats = [
+            'total_tournaments' => \App\Models\Tournament::byOrganizer($organizer->id)->count(),
+            'active_tournaments' => \App\Models\Tournament::byOrganizer($organizer->id)
+                ->whereIn('status', ['published', 'ongoing'])->count(),
+            'draft_tournaments' => \App\Models\Tournament::byOrganizer($organizer->id)
+                ->where('status', 'draft')->count(),
+            'total_teams' => \App\Models\Tournament::byOrganizer($organizer->id)
+                ->withCount('approvedTeams')->get()->sum('approved_teams_count'),
+            'pending_registrations' => \DB::table('tournament_team')
+                ->join('tournaments', 'tournaments.id', '=', 'tournament_team.tournament_id')
+                ->where('tournaments.organizer_id', $organizer->id)
+                ->where('tournament_team.status', 'pending')
+                ->count(),
+        ];
+
+        return view('organizer.dashboard', compact(
+            'organizer',
+            'tournaments',
+            'pendingRegistrations',
+            'stats'
+        ));
     }
 
-    /**
-     * Show organizer profile.
-     */
     public function profile()
     {
         $organizer = Auth::guard('organizer')->user();
-        return view('organizer.profile', compact('organizer'));
+
+        // Stats
+        $stats = $organizer->profileStats();
+
+        // Recent tournaments (latest 5)
+        $recentTournaments = $organizer->tournaments()
+            ->withCount('approvedTeams as teams_count')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        $recentTournaments->transform(function ($t) {
+            $t->cover_image_url = $t->cover_image
+                ? asset('storage/' . $t->cover_image)
+                : 'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=200&h=120&fit=crop';
+            return $t;
+        });
+
+        // Nigeria states for the form
+        $states = json_decode(file_get_contents(resource_path('data/nigeria-states.json')), true);
+
+        return view('organizer.profile', compact(
+            'organizer',
+            'stats',
+            'recentTournaments',
+            'states'
+        ));
     }
 
-    /**
-     * Update organizer profile.
-     */
     public function updateProfile(Request $request)
     {
         $organizer = Auth::guard('organizer')->user();
@@ -155,6 +222,7 @@ class AuthController extends Controller
             'phone' => 'required|string|max:20|unique:organizers,phone,' . $organizer->id,
             'company_name' => 'nullable|string|max:255',
             'state' => 'required|string|max:100',
+            'city' => 'nullable|string|max:100',
         ]);
 
         $organizer->update($validated);

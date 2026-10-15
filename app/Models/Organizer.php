@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany; // Add this import
-
+use DB;
 class Organizer extends Authenticatable
 {
     use HasFactory, Notifiable;
@@ -93,4 +93,43 @@ class Organizer extends Authenticatable
     {
         return $this->hasMany(Team::class);
     }
+
+
+
+    /**
+     * Aggregate profile stats for the organizer profile page.
+     */
+    public function profileStats(): array
+    {
+        $tournamentIds = $this->tournaments()->pluck('id');
+
+        return [
+            'total_tournaments' => $this->tournaments()->count(),
+            'published_tournaments' => $this->tournaments()->where('status', 'published')->count(),
+            'ongoing_tournaments' => $this->tournaments()->where('status', 'ongoing')->count(),
+            'completed_tournaments' => $this->tournaments()->where('status', 'completed')->count(),
+            'draft_tournaments' => $this->tournaments()->where('status', 'draft')->count(),
+            'total_teams' => DB::table('tournament_team')
+                ->whereIn('tournament_id', $tournamentIds)
+                ->where('status', 'approved')
+                ->distinct('team_id')
+                ->count('team_id'),
+            'total_players' => User::whereHas('team', function ($q) use ($tournamentIds) {
+                $q->whereIn('teams.id', function ($sub) use ($tournamentIds) {
+                    $sub->select('team_id')
+                        ->from('tournament_team')
+                        ->whereIn('tournament_id', $tournamentIds)
+                        ->where('status', 'approved');
+                });
+            })->count(),
+            'pending_requests' => DB::table('tournament_team')
+                ->whereIn('tournament_id', $tournamentIds)
+                ->where('status', 'pending')
+                ->count(),
+            'total_matches' => \App\Models\Matches::whereIn('tournament_id', $tournamentIds)->count(),
+            'completed_matches' => \App\Models\Matches::whereIn('tournament_id', $tournamentIds)
+                ->where('status', 'completed')->count(),
+        ];
+    }
+
 }

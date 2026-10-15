@@ -8,7 +8,7 @@ use App\Models\Tournament;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-
+use App\Models\Team;
 class TournamentController extends Controller
 {
     public function index()
@@ -160,4 +160,149 @@ class TournamentController extends Controller
 
         return $request->validate($rules);
     }
+
+/**
+ * Show a team's registration details for review.
+ */
+public function reviewTeam(Tournament $tournament, Team $team)
+{
+    // Ownership check
+    if ($tournament->organizer_id !== Auth::guard('organizer')->id()) {
+        abort(403);
+    }
+
+    // Confirm the team actually has a registration (any status)
+    $registration = $tournament->teams()
+        ->where('team_id', $team->id)
+        ->first();
+
+    if (!$registration) {
+        abort(404, 'No registration found for this team.');
+    }
+
+    // Load team + all active players
+    $team->load([
+        'players' => function ($q) {
+            $q->wherePivot('status', 'active')
+              ->orderBy('pivot_role', 'desc')
+              ->orderBy('first_name');
+        },
+        'captain'
+    ]);
+
+    // Add avatar URLs
+    foreach ($team->players as $player) {
+        $player->avatar_url = $player->avatar
+            ? asset('storage/' . $player->avatar)
+            : 'https://ui-avatars.com/api/?name=' . urlencode($player->full_name)
+              . '&size=80&background=0D9488&color=fff&bold=true';
+    }
+
+    $team->logo_url = $team->logo
+        ? asset('storage/' . $team->logo)
+        : 'https://ui-avatars.com/api/?name=' . urlencode($team->name)
+          . '&size=80&background=00595c&color=fff&bold=true';
+
+    // Check if the team meets tournament criteria
+    $playerCount = $team->players->count();
+
+    $checks = [
+        'min_players' => [
+            'label' => "Minimum {$tournament->min_players_per_team} players",
+            'passed' => $playerCount >= $tournament->min_players_per_team,
+            'detail' => "{$playerCount} registered",
+        ],
+        'max_players' => [
+            'label' => "Maximum {$tournament->max_players_per_team} players",
+            'passed' => $playerCount <= $tournament->max_players_per_team,
+            'detail' => "{$playerCount} registered",
+        ],
+        'registration_open' => [
+            'label' => 'Within registration window',
+            'passed' => $tournament->isRegistrationOpen(),
+            'detail' => $tournament->registration_opens->format('M d') . ' – ' . $tournament->registration_closes->format('M d, Y'),
+        ],
+        'team_slot' => [
+            'label' => 'Team slot available',
+            'passed' => $tournament->approvedTeams()->count() < $tournament->max_teams,
+            'detail' => $tournament->approvedTeams()->count() . '/' . $tournament->max_teams . ' approved',
+        ],
+    ];
+
+    $allChecksPassed = collect($checks)->every(fn($c) => $c['passed']);
+
+    return view('organizer.tournaments.review-team', compact(
+        'tournament',
+        'team',
+        'registration',
+        'checks',
+        'allChecksPassed',
+        'playerCount'
+    ));
+}
+
+/**
+ * Approve a pending registration from the review page.
+ */
+public function approveRegistration(Request $request, Tournament $tournament, Team $team)
+{
+    if ($tournament->organizer_id !== Auth::guard('organizer')->id()) {
+        abort(403);
+    }
+
+    $validated = $request->validate([
+        'note' => 'nullable|string|max:1000',
+    ]);
+
+    $registration = $tournament->teams()->where('team_id', $team->id)->first();
+    if (!$registration) {
+        return back()->withErrors(['error' => 'Registration not found.']);
+    }
+
+    if ($registration->pivot->status === 'approved') {
+        return back()->with('info', 'This team is already approved.');
+    }
+
+    if ($tournament->approvedTeams()->count() >= $tournament->max_teams) {
+        return back()->withErrors(['error' => 'Tournament has reached its maximum team limit.']);
+    }
+
+    $tournament->teams()->updateExistingPivot($team->id, [
+        'status' => 'approved',
+        'approved_at' => now(),
+        'notes' => $validated['note'] ?? null,
+    ]);
+
+    return redirect()
+        ->route('organizer.tournaments.show', $tournament)
+        ->with('success', $team->name . ' has been approved for ' . $tournament->name . '.');
+}
+
+/**
+ * Reject a pending registration from the review page.
+ */
+public function rejectRegistration(Request $request, Tournament $tournament, Team $team)
+{
+    if ($tournament->organizer_id !== Auth::guard('organizer')->id()) {
+        abort(403);
+    }
+
+    $validated = $request->validate([
+        'note' => 'nullable|string|max:1000',
+    ]);
+
+    $registration = $tournament->teams()->where('team_id', $team->id)->first();
+    if (!$registration) {
+        return back()->withErrors(['error' => 'Registration not found.']);
+    }
+
+    $tournament->teams()->updateExistingPivot($team->id, [
+        'status' => 'rejected',
+        'notes' => $validated['note'] ?? null,
+    ]);
+
+    return redirect()
+        ->route('organizer.tournaments.show', $tournament)
+        ->with('success', $team->name . "'s registration has been rejected.");
+}
 }

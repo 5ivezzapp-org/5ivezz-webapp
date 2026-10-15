@@ -68,33 +68,6 @@ class Tournament extends Model
         'requires_player_roster' => 'boolean',
     ];
 
-    // Relationship with Organizer
-    public function organizer(): BelongsTo
-    {
-        return $this->belongsTo(Organizer::class);
-    }
-
-    /**
-     * Get the teams participating in this tournament.
-     * This assumes you have a pivot table 'tournament_teams'
-     * or you're using the matches table to determine teams.
-     */
-    public function teams(): BelongsToMany
-    {
-        // If you have a pivot table for tournament teams:
-        // return $this->belongsToMany(Team::class, 'tournament_teams')
-        //     ->withPivot('status', 'group', 'points', 'created_at')
-        //     ->withTimestamps();
-
-        // Alternative: Get teams through matches
-        // This gets distinct teams that have played in this tournament
-        // Using the Matches model
-        return $this->belongsToMany(Team::class, 'matches', 'tournament_id', 'home_team_id')
-            ->distinct()
-            ->orWhere('tournament_id', $this->id)
-            ->select('teams.*');
-    }
-
     /**
      * Get all matches in this tournament.
      */
@@ -144,11 +117,6 @@ class Tournament extends Model
         return $query->where('tournament_start_date', '>=', now());
     }
 
-    public function scopeOngoing($query)
-    {
-        return $query->where('tournament_start_date', '<=', now())
-                    ->where('tournament_end_date', '>=', now());
-    }
 
     // Helper methods
     public function isDraft(): bool
@@ -211,4 +179,60 @@ class Tournament extends Model
             default => ucfirst($this->status),
         };
     }
+
+
+    public function organizer(): BelongsTo
+    {
+        return $this->belongsTo(Organizer::class);
+    }
+
+    /**
+     * Teams registered in this tournament.
+     */
+    public function teams(): BelongsToMany
+    {
+        return $this->belongsToMany(Team::class, 'tournament_team')
+            ->withPivot([
+                'status', 'group', 'points', 'goals_for', 'goals_against',
+                'matches_played', 'wins', 'draws', 'losses',
+                'registered_by', 'registered_at', 'approved_at', 'notes'
+            ])
+            ->withTimestamps();
+    }
+
+    /**
+     * Only approved teams.
+     */
+    public function approvedTeams(): BelongsToMany
+    {
+        return $this->teams()->wherePivot('status', 'approved');
+    }
+
+    /**
+     * Only pending teams.
+     */
+    public function pendingTeams(): BelongsToMany
+    {
+        return $this->teams()->wherePivot('status', 'pending');
+    }
+
+    public function scopeOngoing($query)
+    {
+        return $query->where('tournament_start_date', '<=', now())
+                    ->where('tournament_end_date', '>=', now());
+    }
+
+    public function canAcceptRegistrations(): bool
+    {
+        return $this->isPublished() 
+            && $this->isRegistrationOpen() 
+            && $this->approvedTeams()->count() < $this->max_teams;
+    }
+
+    public function teamsCount(): int
+    {
+        return $this->approvedTeams()->count();
+    }
+
+
 }

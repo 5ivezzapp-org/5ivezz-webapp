@@ -132,37 +132,41 @@
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-md">
             <!-- Featured Tournament Card -->
-            @if($featuredTournament)
-            <div class="lg:col-span-2 bg-surface-container-lowest rounded-xl border border-outline-variant/30 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between group relative">
-                <div class="absolute inset-0 bg-cover bg-center opacity-10 group-hover:opacity-15 transition-opacity" 
-                     style="background-image: url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&h=400&fit=crop')"></div>
-                <div class="p-xl relative z-10 flex flex-col h-full justify-between">
-                    <div class="flex justify-between items-start mb-xl">
-                        <span class="bg-secondary-container text-on-secondary-container px-sm py-xs rounded-full text-label-sm uppercase tracking-wider font-semibold">
-                            {{ $featuredTournament->status == 'published' ? 'Registration Open' : ucfirst($featuredTournament->status) }}
-                        </span>
-                        <span class="text-outline text-label-md">{{ $featuredTournament->category ?? 'Open Age' }} • {{ $featuredTournament->tournament_format ?? 'Standard' }}</span>
-                    </div>
-                    <div>
-                        <span class="text-primary font-label-md uppercase tracking-wider block mb-xs">Featured Tournament</span>
-                        <h3 class="font-headline-lg text-headline-lg text-on-surface mb-sm">{{ $featuredTournament->name }}</h3>
-                        <p class="text-on-surface-variant mb-xl max-w-lg">{{ $featuredTournament->description ?? 'The premier grassroots tournament uniting elite regional talent.' }}</p>
-                        <div class="flex items-center gap-xl text-on-surface-variant text-label-md">
-                            <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[18px]">location_on</span> {{ $featuredTournament->city }}, {{ $featuredTournament->state }}</div>
-                            <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[18px]">group</span> {{ $featuredTournament->teams_count ?? 0 }} Teams</div>
-                        </div>
-                    </div>
-                    <div class="pt-lg mt-lg border-t border-outline-variant/20 flex justify-between items-center">
-                        @if($featuredTournament->winner_prize)
-                            <span class="text-on-surface font-semibold text-label-md">Prize Pool: ₦{{ number_format($featuredTournament->winner_prize, 2) }}</span>
-                        @else
-                            <span class="text-on-surface-variant text-label-md">Registration Fee: ₦{{ number_format($featuredTournament->registration_fee, 2) }}</span>
-                        @endif
-                        <button class="bg-primary-container text-on-primary-container px-lg py-sm rounded-lg text-label-md font-medium hover:opacity-90 transition-opacity">Register Team</button>
-                    </div>
-                </div>
+            <!-- Featured Tournament Card -->
+@if($featuredTournament)
+<div class="lg:col-span-2 bg-surface-container-lowest rounded-xl border border-outline-variant/30 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col justify-between group relative">
+    <div class="absolute inset-0 bg-cover bg-center opacity-10 group-hover:opacity-15 transition-opacity" 
+         style="background-image: url('https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=1200&h=400&fit=crop')"></div>
+    <div class="p-xl relative z-10 flex flex-col h-full justify-between">
+        <div class="flex justify-between items-start mb-xl">
+            <span class="bg-secondary-container text-on-secondary-container px-sm py-xs rounded-full text-label-sm uppercase tracking-wider font-semibold">
+                {{ $featuredTournament->status == 'published' ? 'Registration Open' : ucfirst($featuredTournament->status) }}
+            </span>
+            <span class="text-outline text-label-md">{{ $featuredTournament->category ?? 'Open Age' }} • {{ $featuredTournament->tournament_format ?? 'Standard' }}</span>
+        </div>
+        <div>
+            <span class="text-primary font-label-md uppercase tracking-wider block mb-xs">Featured Tournament</span>
+            <h3 class="font-headline-lg text-headline-lg text-on-surface mb-sm">{{ $featuredTournament->name }}</h3>
+            <p class="text-on-surface-variant mb-xl max-w-lg">{{ $featuredTournament->description ?? 'The premier grassroots tournament uniting elite regional talent.' }}</p>
+            <div class="flex items-center gap-xl text-on-surface-variant text-label-md">
+                <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[18px]">location_on</span> {{ $featuredTournament->city }}, {{ $featuredTournament->state }}</div>
+                <div class="flex items-center gap-xs"><span class="material-symbols-outlined text-[18px]">group</span> {{ $featuredTournament->teams_count ?? 0 }} Teams</div>
             </div>
+        </div>
+        <div class="pt-lg mt-lg border-t border-outline-variant/20 flex justify-between items-center">
+            @if($featuredTournament->winner_prize)
+                <span class="text-on-surface font-semibold text-label-md">Prize Pool: ₦{{ number_format($featuredTournament->winner_prize, 2) }}</span>
+            @else
+                <span class="text-on-surface-variant text-label-md">Registration Fee: ₦{{ number_format($featuredTournament->registration_fee, 2) }}</span>
             @endif
+            <a href="{{ route('player.tournaments.show', $featuredTournament->id) }}"
+               class="bg-primary-container text-on-primary-container px-lg py-sm rounded-lg text-label-md font-medium hover:opacity-90 transition-opacity inline-block">
+                Register Team
+            </a>
+        </div>
+    </div>
+</div>
+@endif
             
             <!-- Featured Player Card -->
             @if($featuredPlayer)

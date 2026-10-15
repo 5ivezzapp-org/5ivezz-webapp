@@ -40,7 +40,7 @@
     <div class="absolute inset-0 bg-black/40 z-10"></div>
     <img class="absolute inset-0 w-full h-full object-cover z-0"
         data-alt="A striking, low-angle editorial photograph of a grassroots football player pausing on a dusty, sun-drenched local pitch in Lagos."
-        src="https://lh3.googleusercontent.com/aida-public/AB6AXuCv7uOy7yaw72YGx_ucHG69bM27ucIlLw01mropLm8BdNQsO8Pr0minwcWfTOi3L5KhrbsJqu9vq3LfsuD5gcwlTcNxgfXpy9HBk9o9nZG9CoVeWtvYM_xYYUkV3a7qjiKk4njMassO42iMSDBLMgNrSjhFIwKc6z4qj5CZ8UiZFzSYGB836DbC_DvzDWwfV23awpPC4e1GKGQ7RalJ9kWB7mD9ElhGtKDm8j92v4mpnEDnEWtu2-jQzA" />
+        src="{{ asset('images/Background image.png') }}" />
     
     <!-- Content -->
     <div class="relative z-20 h-full min-h-screen flex flex-col justify-between p-md lg:p-xl pt-3xl">
@@ -234,82 +234,86 @@
         </div>
     </section>
 
-    <!-- Tournament Discovery Section -->
-    <section class="px-md lg:px-xl py-2xl">
-        <div class="mb-xl flex flex-col md:flex-row md:items-end justify-between gap-md">
-            <div>
-                <h2 class="font-display-lg text-display-lg font-bold text-on-background mb-sm">On the pitch.</h2>
-                <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">Discover premium grassroots tournaments happening near you. Real competition, documented permanently.</p>
-            </div>
-            <a href="{{ route('explore.index') }}" class="w-max font-label-md text-label-md text-primary flex items-center gap-xs hover:text-primary-container transition-colors group">
-                View all tournaments
-                <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
-            </a>
+<!-- Tournament Discovery Section -->
+<section class="px-md lg:px-xl py-2xl">
+    <div class="mb-xl flex flex-col md:flex-row md:items-end justify-between gap-md">
+        <div>
+            <h2 class="font-display-lg text-display-lg font-bold text-on-background mb-sm">On the pitch.</h2>
+            <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">Discover premium grassroots tournaments happening near you. Real competition, documented permanently.</p>
         </div>
-        
-        @if($activeTournaments->isNotEmpty())
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-md lg:gap-lg">
-            @foreach($activeTournaments as $tournament)
-            <div class="group cursor-pointer flex flex-col bg-surface rounded-xl border border-outline-variant/20 overflow-hidden shadow-sm hover:shadow-md transition-shadow tournament-card">
-                <div class="h-48 relative overflow-hidden">
-                    <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        data-alt="{{ $tournament->name }}"
-                        src="{{ $tournament->cover_image ?? 'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=400&h=300&fit=crop' }}" />
-                    <div class="absolute top-sm right-sm {{ $tournament->status_class }} font-label-sm text-label-sm px-2 py-1 rounded shadow-sm">
-                        {{ $tournament->status_display }}
-                    </div>
-                </div>
-                <div class="p-md flex flex-col flex-grow">
-                    <h3 class="font-headline-sm text-headline-sm font-bold text-on-surface mb-xs line-clamp-1">{{ $tournament->name }}</h3>
-                    <div class="flex items-center gap-xs text-on-surface-variant mb-md">
-                        <span class="material-symbols-outlined text-sm">location_on</span>
-                        <span class="font-label-sm text-label-sm">{{ $tournament->city }}, {{ $tournament->state }}</span>
-                    </div>
-                    <div class="mt-auto flex justify-between items-center pt-md border-t border-outline-variant/20">
-                        <div class="flex flex-col">
-                            <span class="font-label-sm text-label-sm text-on-surface-variant">Prize Pool</span>
-                            <span class="font-label-md text-label-md font-bold text-on-surface">
-                                @if($tournament->winner_prize)
-                                    ₦{{ number_format($tournament->winner_prize, 0) }}
-                                @else
-                                    TBA
-                                @endif
-                            </span>
-                        </div>
-                        <div class="flex items-center gap-xs text-primary bg-primary/5 px-2 py-1 rounded-md">
-                            <span class="material-symbols-outlined text-sm">groups</span>
-                            <span class="font-label-sm text-label-sm font-bold">
-                                {{ $tournament->teams_count }}/{{ $tournament->max_teams }}
-                            </span>
-                        </div>
-                    </div>
+        <a href="{{ route('explore.index') }}" class="w-max font-label-md text-label-md text-primary flex items-center gap-xs hover:text-primary-container transition-colors group">
+            View all tournaments
+            <span class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </a>
+    </div>
+
+    @if($activeTournaments->isNotEmpty())
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-md lg:gap-lg">
+        @foreach($activeTournaments as $tournament)
+        <a href="{{ route('player.tournaments.show', $tournament->id) }}"
+           class="group cursor-pointer flex flex-col bg-surface rounded-xl border border-outline-variant/20 overflow-hidden shadow-sm hover:shadow-md transition-shadow tournament-card">
+            <div class="h-48 relative overflow-hidden">
+                <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    alt="{{ $tournament->name }}"
+                    src="{{ $tournament->cover_image ?? 'https://images.unsplash.com/photo-1459865264687-595d652de67e?w=400&h=300&fit=crop' }}" />
+                <div class="absolute top-sm right-sm {{ $tournament->status_class }} font-label-sm text-label-sm px-2 py-1 rounded shadow-sm">
+                    {{ $tournament->status_display }}
                 </div>
             </div>
-            @endforeach
-        </div>
-        @else
-        <div class="bg-surface-container-lowest rounded-xl border border-black/5 p-12 text-center">
-            <div class="flex flex-col items-center">
-                <span class="material-symbols-outlined empty-state-icon text-on-surface-variant">emoji_events</span>
-                <h3 class="font-headline-md text-headline-md text-on-surface mt-4 mb-2">No active tournaments right now</h3>
-                <p class="text-on-surface-variant text-body-md max-w-md mx-auto">
-                    Check back soon for upcoming tournaments in your area. 
-                    Tournaments will appear here when organizers publish them.
-                </p>
-                <div class="mt-6 flex gap-4">
-                    <a href="{{ route('explore.index') }}" class="bg-primary text-on-primary px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors">
-                        Explore Tournaments
+            <div class="p-md flex flex-col flex-grow">
+                <h3 class="font-headline-sm text-headline-sm font-bold text-on-surface mb-xs line-clamp-1 flex items-center justify-between gap-2">
+                    <span class="truncate">{{ $tournament->name }}</span>
+                    <span class="material-symbols-outlined text-primary text-sm opacity-0 group-hover:opacity-100 transition-opacity shrink-0">arrow_forward</span>
+                </h3>
+                <div class="flex items-center gap-xs text-on-surface-variant mb-md">
+                    <span class="material-symbols-outlined text-sm">location_on</span>
+                    <span class="font-label-sm text-label-sm">{{ $tournament->city }}, {{ $tournament->state }}</span>
+                </div>
+                <div class="mt-auto flex justify-between items-center pt-md border-t border-outline-variant/20">
+                    <div class="flex flex-col">
+                        <span class="font-label-sm text-label-sm text-on-surface-variant">Prize Pool</span>
+                        <span class="font-label-md text-label-md font-bold text-on-surface">
+                            @if($tournament->winner_prize)
+                                ₦{{ number_format($tournament->winner_prize, 0) }}
+                            @else
+                                TBA
+                            @endif
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-xs text-primary bg-primary/5 px-2 py-1 rounded-md">
+                        <span class="material-symbols-outlined text-sm">groups</span>
+                        <span class="font-label-sm text-label-sm font-bold">
+                            {{ $tournament->teams_count }}/{{ $tournament->max_teams }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </a>
+        @endforeach
+    </div>
+    @else
+    <div class="bg-surface-container-lowest rounded-xl border border-black/5 p-12 text-center">
+        <div class="flex flex-col items-center">
+            <span class="material-symbols-outlined empty-state-icon text-on-surface-variant">emoji_events</span>
+            <h3 class="font-headline-md text-headline-md text-on-surface mt-4 mb-2">No active tournaments right now</h3>
+            <p class="text-on-surface-variant text-body-md max-w-md mx-auto">
+                Check back soon for upcoming tournaments in your area.
+                Tournaments will appear here when organizers publish them.
+            </p>
+            <div class="mt-6 flex gap-4">
+                <a href="{{ route('player.tournaments.index') }}" class="bg-primary text-on-primary px-6 py-2 rounded-lg hover:bg-primary/90 transition-colors">
+                    Explore Tournaments
+                </a>
+                @auth
+                    <a href="{{ route('player.teams.index') }}" class="bg-surface border border-outline-variant px-6 py-2 rounded-lg hover:bg-surface-container-low transition-colors">
+                        Find a Team
                     </a>
-                    @auth
-                        <a href="{{ route('player.teams.index') }}" class="bg-surface border border-outline-variant px-6 py-2 rounded-lg hover:bg-surface-container-low transition-colors">
-                            Find a Team
-                        </a>
-                    @endauth
-                </div>
+                @endauth
             </div>
         </div>
-        @endif
-    </section>
+    </div>
+    @endif
+</section>
 
     <!-- Conversion Moment -->
     <section class="px-md lg:px-xl py-3xl mb-xl">

@@ -226,15 +226,7 @@
 
                     <!-- User Avatar / Login -->
                     @auth
-                        <button
-                            class="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-primary-container border-2 border-white/20 shadow-lg hover:shadow-primary/20 transition-all duration-300 hover:scale-105 flex items-center justify-center text-on-primary font-bold text-sm overflow-hidden">
-                            @if(Auth::user()->avatar)
-                                <img src="{{ Auth::user()->avatar }}" alt="{{ Auth::user()->name }}"
-                                    class="w-full h-full object-cover" />
-                            @else
-                                {{ substr(Auth::user()->name, 0, 2) }}
-                            @endif
-                        </button>
+                        .
                     @else
                         <div class="flex items-center gap-2">
                             <a href="{{ route('login') }}"
@@ -260,14 +252,16 @@
         @yield('content')
     </main>
 
-    <!-- ============================================ -->
-    <!-- BOTTOM NAVIGATION WITH GLASSMORPHISM -->
-    <!-- ============================================ -->
-    <nav class="fixed bottom-0 w-full z-50 flex justify-center pb-4 md:pb-6 px-4 pointer-events-none">
-        <div
-            class="fixed bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[480px] rounded-2xl glass-bottom-nav shadow-2xl flex items-center justify-around px-1.5 md:px-2 py-1.5 pointer-events-auto transition-all duration-300">
+<!-- ============================================ -->
+<!-- BOTTOM NAVIGATION WITH GLASSMORPHISM -->
+<!-- ============================================ -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-center pb-4 md:pb-6 px-4 pointer-events-none">
+    <div
+        class="fixed bottom-4 md:bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[480px] rounded-2xl glass-bottom-nav shadow-2xl flex items-center justify-around px-1.5 md:px-2 py-1.5 pointer-events-auto transition-all duration-300">
 
-            @guest
+        {{-- ================= GUEST ================= --}}
+        @guest
+            @guest('organizer')
                 <!-- Home -->
                 <a href="{{ route('home') }}"
                     class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('home') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
@@ -310,57 +304,105 @@
                         style="font-variation-settings: 'FILL' {{ request()->routeIs('wallet') ? '1' : '0' }};">wallet</span>
                     <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Wallet</span>
                 </a>
-
             @endguest
+        @endguest
 
-            <!-- Players (only for logged-in users) -->
-            @auth
-                <!-- Home/Dashboard -->
-                <a href="{{ route('player.dashboard') }}"
-                    class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('player.dashboard') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
-                    <span
-                        class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
-                        style="font-variation-settings: 'FILL' {{ request()->routeIs('player.dashboard') ? '1' : '0' }};">home</span>
-                    <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Home</span>
-                </a>
+        {{-- ================= PLAYER (logged in) ================= --}}
+        @auth
+            <!-- Home/Dashboard -->
+            <a href="{{ route('player.dashboard') }}"
+                class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('player.dashboard') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
+                <span
+                    class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
+                    style="font-variation-settings: 'FILL' {{ request()->routeIs('player.dashboard') ? '1' : '0' }};">home</span>
+                <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Home</span>
+            </a>
 
-                <a href="{{ route('explore.index') }}"
-                    class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('explore.index') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
-                    <span
-                        class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
-                        style="font-variation-settings: 'FILL' {{ request()->routeIs('explore.index') ? '1' : '0' }};">explore</span>
-                    <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Explore</span>
-                </a>
+            <a href="{{ route('explore.index') }}"
+                class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('explore.index') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
+                <span
+                    class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
+                    style="font-variation-settings: 'FILL' {{ request()->routeIs('explore.index') ? '1' : '0' }};">explore</span>
+                <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Explore</span>
+            </a>
 
-                <!-- Teams -->
-                <a href="{{ route('teams.index') }}"
-                    class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('teams.*') || request()->routeIs('public.team.show') || request()->routeIs('player.teams.*') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
-                    <span
-                        class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
-                        style="font-variation-settings: 'FILL' {{ request()->routeIs('teams.*') || request()->routeIs('public.team.show') || request()->routeIs('player.teams.*') ? '1' : '0' }};">groups</span>
-                    <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Teams</span>
-                </a>
+            <!-- Teams -->
+            <a href="{{ route('teams.index') }}"
+                class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('teams.*') || request()->routeIs('public.team.show') || request()->routeIs('player.teams.*') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
+                <span
+                    class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
+                    style="font-variation-settings: 'FILL' {{ request()->routeIs('teams.*') || request()->routeIs('public.team.show') || request()->routeIs('player.teams.*') ? '1' : '0' }};">groups</span>
+                <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Teams</span>
+            </a>
 
-                <a href="{{ route('wallet') }}"
-                    class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('wallet') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
-                    <span
-                        class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
-                        style="font-variation-settings: 'FILL' {{ request()->routeIs('wallet') ? '1' : '0' }};">wallet</span>
-                    <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Wallet</span>
-                </a>
+            <a href="{{ route('wallet') }}"
+                class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('wallet') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
+                <span
+                    class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
+                    style="font-variation-settings: 'FILL' {{ request()->routeIs('wallet') ? '1' : '0' }};">wallet</span>
+                <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Wallet</span>
+            </a>
 
-                <!-- Profile -->
-                <a href="{{ route('player.profile') }}"
-                    class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('player.profile') || request()->routeIs('player.profile.*') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
-                    <span
-                        class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
-                        style="font-variation-settings: 'FILL' {{ request()->routeIs('player.profile') || request()->routeIs('player.profile.*') ? '1' : '0' }};">account_circle</span>
-                    <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Profile</span>
-                </a>
-            @endauth
+            <!-- Profile -->
+            <a href="{{ route('player.profile') }}"
+                class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('player.profile') || request()->routeIs('player.profile.*') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
+                <span
+                    class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
+                    style="font-variation-settings: 'FILL' {{ request()->routeIs('player.profile') || request()->routeIs('player.profile.*') ? '1' : '0' }};">account_circle</span>
+                <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Profile</span>
+            </a>
+        @endauth
 
-        </div>
-    </nav>
+        {{-- ================= ORGANIZER (logged in) ================= --}}
+        @auth('organizer')
+            <!-- Home/Dashboard -->
+            <a href="{{ route('organizer.dashboard') }}"
+                class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('organizer.dashboard') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
+                <span
+                    class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
+                    style="font-variation-settings: 'FILL' {{ request()->routeIs('organizer.dashboard') ? '1' : '0' }};">home</span>
+                <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Home</span>
+            </a>
+
+            <!-- Explore -->
+            <a href="{{ route('explore.index') }}"
+                class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('explore.index') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
+                <span
+                    class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
+                    style="font-variation-settings: 'FILL' {{ request()->routeIs('explore.index') ? '1' : '0' }};">explore</span>
+                <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Explore</span>
+            </a>
+
+            <!-- My Tournaments -->
+            <a href="{{ route('organizer.tournaments.index') }}"
+                class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('organizer.tournaments.*') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
+                <span
+                    class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
+                    style="font-variation-settings: 'FILL' {{ request()->routeIs('organizer.tournaments.*') ? '1' : '0' }};">emoji_events</span>
+                <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Tournaments</span>
+            </a>
+
+            <!-- Wallet -->
+            <a href="{{ route('wallet') }}"
+                class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('wallet') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
+                <span
+                    class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
+                    style="font-variation-settings: 'FILL' {{ request()->routeIs('wallet') ? '1' : '0' }};">wallet</span>
+                <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Wallet</span>
+            </a>
+
+            <!-- Profile -->
+            <a href="{{ route('organizer.profile') }}"
+                class="flex flex-col items-center justify-center min-w-[48px] h-12 flex-1 group transition-all duration-300 {{ request()->routeIs('organizer.profile') || request()->routeIs('organizer.profile.*') ? 'text-primary dark:text-primary-fixed-dim scale-110' : 'text-on-surface-variant/60 dark:text-on-surface-variant/40 hover:text-primary dark:hover:text-primary-fixed-dim' }} active:scale-95">
+                <span
+                    class="material-symbols-outlined text-xl md:text-2xl group-hover:scale-110 transition-transform duration-200"
+                    style="font-variation-settings: 'FILL' {{ request()->routeIs('organizer.profile') || request()->routeIs('organizer.profile.*') ? '1' : '0' }};">account_circle</span>
+                <span class="font-label-sm text-[10px] md:text-label-sm mt-0.5">Profile</span>
+            </a>
+        @endauth
+
+    </div>
+</nav>
 
     <!-- ============================================ -->
     <!-- SEARCH MODAL -->

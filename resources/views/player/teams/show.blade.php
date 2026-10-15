@@ -66,6 +66,12 @@
             </div>
         @endif
 
+        @if(session('info'))
+            <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                <p class="text-sm text-blue-700">{{ session('info') }}</p>
+            </div>
+        @endif
+
         <!-- Hero: Verified Team Profile Surface -->
         <section class="bg-surface-container-lowest shadow-[0_4px_12px_rgba(0,0,0,0.03)] rounded-xl border border-black/5 p-lg md:p-xl flex flex-col md:flex-row gap-lg md:items-center relative overflow-hidden">
             <div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2"></div>
@@ -144,59 +150,135 @@
             </div>
         </div>
 
-        <!-- Actions -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-md">
-            @auth
-                @if($isMember)
-                    <div class="md:col-span-2 bg-secondary-container/10 text-secondary-container rounded-xl px-lg py-4 flex items-center justify-between">
-                        <span class="font-headline-sm text-headline-sm">
-                            @if($userRole == 'captain')
-                                👑 You're the Captain
-                            @elseif($userRole == 'vice_captain')
-                                ⭐ You're the Vice Captain
-                            @else
-                                ✅ You're a member of this team
-                            @endif
-                        </span>
-                        <span class="material-symbols-outlined">check_circle</span>
+<!-- Actions -->
+<section class="grid grid-cols-1 md:grid-cols-3 gap-md">
+    @auth
+        @if($isMember)
+            {{-- Current member --}}
+            <div class="md:col-span-2 bg-secondary-container/10 text-secondary-container rounded-xl px-lg py-4 flex items-center justify-between">
+                <span class="font-headline-sm text-headline-sm">
+                    @if($userRole == 'captain')
+                        👑 You're the Captain
+                    @elseif($userRole == 'vice_captain')
+                        ⭐ You're the Vice Captain
+                    @else
+                        ✅ You're a member of this team
+                    @endif
+                </span>
+                <span class="material-symbols-outlined">check_circle</span>
+            </div>
+
+            @if($userRole != 'captain')
+                <form action="{{ route('player.teams.leave', $team) }}" method="POST"
+                      onsubmit="return confirm('Are you sure you want to leave this team?')">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit"
+                            class="w-full bg-error/10 text-error rounded-xl px-lg py-4 hover:bg-error/20 transition-colors active:scale-[0.98] duration-200">
+                        <span class="font-headline-sm text-headline-sm">Leave Team</span>
+                    </button>
+                </form>
+            @endif
+
+        @elseif($hasPendingRequest)
+            {{-- Already requested --}}
+            <div class="md:col-span-2 bg-amber-50 text-amber-800 rounded-xl px-lg py-4 flex items-center justify-between">
+                <div>
+                    <p class="font-headline-sm text-headline-sm">Request Pending</p>
+                    <p class="font-body-sm text-body-sm opacity-80 mt-0.5">The captain will review your request shortly.</p>
+                </div>
+                <span class="material-symbols-outlined">hourglass_top</span>
+            </div>
+
+        @else
+            {{-- Request to join --}}
+            <form action="{{ route('teams.request-join', $team) }}" method="POST" class="md:col-span-2">
+                @csrf
+                <button type="submit"
+                        class="w-full bg-primary text-on-primary rounded-xl px-lg py-4 flex items-center justify-between shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:bg-primary/90 transition-colors active:scale-[0.98] duration-200 group">
+                    <span class="font-headline-sm text-headline-sm">Request to Join Team</span>
+                    <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </button>
+            </form>
+        @endif
+    @else
+        {{-- Guest --}}
+        <a href="{{ route('player.login') }}"
+           class="md:col-span-2 bg-primary text-on-primary rounded-xl px-lg py-4 flex items-center justify-between shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:bg-primary/90 transition-colors active:scale-[0.98] duration-200 group">
+            <span class="font-headline-sm text-headline-sm">Login to Request to Join</span>
+            <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+        </a>
+    @endauth
+
+    {{-- Invite code --}}
+    <div class="bg-surface-container-low border border-outline-variant/20 rounded-xl p-md flex flex-col justify-center">
+        <span class="font-label-sm text-label-sm text-on-surface-variant mb-xs uppercase tracking-wider">Invite Code</span>
+        <div class="flex items-center justify-between bg-surface-container-lowest rounded-lg border border-outline-variant/30 p-sm">
+            <span class="font-label-md text-label-md text-on-surface font-mono">{{ $team->invite_code }}</span>
+            <button onclick="copyInviteCode('{{ $team->invite_code }}')"
+                    class="text-primary hover:bg-primary/10 p-1 rounded transition-colors" title="Copy Invite Code">
+                <span class="material-symbols-outlined text-[20px]">content_copy</span>
+            </button>
+        </div>
+    </div>
+</section>
+
+{{-- Join Requests (captain only) --}}
+@if($isCaptain && $joinRequests->isNotEmpty())
+    <section class="space-y-md">
+        <div class="flex items-center justify-between">
+            <h3 class="font-headline-md text-headline-md text-on-surface flex items-center gap-sm">
+                <span class="material-symbols-outlined text-primary">pending_actions</span>
+                Join Requests
+            </h3>
+            <span class="font-label-md text-label-md text-on-surface-variant">
+                {{ $joinRequests->count() }} pending
+            </span>
+        </div>
+
+        <div class="space-y-md">
+            @foreach($joinRequests as $requester)
+                <div class="bg-surface-container-lowest border border-black/5 rounded-xl p-md flex flex-col sm:flex-row sm:items-center justify-between gap-md shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                    <div class="flex items-center gap-md">
+                        @if($requester->avatar)
+                            <img class="w-12 h-12 rounded-full object-cover border-2 border-surface"
+                                 src="{{ asset('storage/' . $requester->avatar) }}"
+                                 alt="{{ $requester->full_name }}" />
+                        @else
+                            <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-lg font-bold text-primary border-2 border-surface">
+                                {{ strtoupper(substr($requester->first_name, 0, 1)) }}
+                            </div>
+                        @endif
+                        <div>
+                            <p class="font-label-md text-label-md text-on-surface">{{ $requester->full_name }}</p>
+                            <p class="font-label-sm text-label-sm text-on-surface-variant">
+                                {{ $requester->position ? strtoupper($requester->position) : 'Player' }}
+                                · Requested {{ $requester->pivot->created_at->diffForHumans() }}
+                            </p>
+                        </div>
                     </div>
-                    @if($userRole != 'captain')
-                        <form action="{{ route('player.teams.leave', $team) }}" method="POST" onsubmit="return confirm('Are you sure you want to leave this team?')">
+
+                    <div class="flex items-center gap-sm">
+                        <form action="{{ route('teams.requests.approve', [$team, $requester]) }}" method="POST">
                             @csrf
-                            @method('DELETE')
-                            <button type="submit" class="w-full bg-error/10 text-error rounded-xl px-lg py-4 hover:bg-error/20 transition-colors active:scale-[0.98] duration-200">
-                                <span class="font-headline-sm text-headline-sm">Leave Team</span>
+                            <button type="submit"
+                                    class="px-md py-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-label-md text-label-md">
+                                Approve
                             </button>
                         </form>
-                    @endif
-                @else
-                    <form action="{{ route('player.teams.join') }}" method="POST" class="md:col-span-2">
-                        @csrf
-                        <input type="hidden" name="invite_code" value="{{ $team->invite_code }}">
-                        <button type="submit" 
-                                class="w-full bg-primary text-on-primary rounded-xl px-lg py-4 flex items-center justify-between shadow-[0_4px_12px_rgba(0,0,0,0.1)] hover:bg-primary/90 transition-colors active:scale-[0.98] duration-200 group">
-                            <span class="font-headline-sm text-headline-sm">Join This Team</span>
-                            <span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                        </button>
-                    </form>
-                @endif
-            @else
-                <div class="md:col-span-2 bg-surface-container-low border border-outline-variant/20 rounded-xl px-lg py-4">
-                    <p class="font-body-md text-body-md text-on-surface-variant">Login to join this team</p>
+                        <form action="{{ route('teams.requests.reject', [$team, $requester]) }}" method="POST">
+                            @csrf
+                            <button type="submit"
+                                    class="px-md py-sm bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors font-label-md text-label-md">
+                                Reject
+                            </button>
+                        </form>
+                    </div>
                 </div>
-            @endauth
-
-            <div class="bg-surface-container-low border border-outline-variant/20 rounded-xl p-md flex flex-col justify-center">
-                <span class="font-label-sm text-label-sm text-on-surface-variant mb-xs uppercase tracking-wider">Invite Code</span>
-                <div class="flex items-center justify-between bg-surface-container-lowest rounded-lg border border-outline-variant/30 p-sm">
-                    <span class="font-label-md text-label-md text-on-surface font-mono">{{ $team->invite_code }}</span>
-                    <button onclick="copyInviteCode('{{ $team->invite_code }}')"
-                        class="text-primary hover:bg-primary/10 p-1 rounded transition-colors" title="Copy Invite Code">
-                        <span class="material-symbols-outlined text-[20px]">content_copy</span>
-                    </button>
-                </div>
-            </div>
-        </section>
+            @endforeach
+        </div>
+    </section>
+@endif
 
         <!-- Top Scorers -->
         @if($topScorers->isNotEmpty())

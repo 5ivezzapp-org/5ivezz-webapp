@@ -68,27 +68,22 @@ class Team extends Model
     public function players(): BelongsToMany
     {
         return $this->belongsToMany(User::class, 'team_player')
-                    ->withPivot('role', 'jersey_number', 'status', 'joined_at')
-                    ->withTimestamps();
-    }
-
-    public function activePlayers(): BelongsToMany
-    {
-        return $this->players()->wherePivot('status', 'active');
+            ->withPivot('role', 'jersey_number', 'status', 'joined_at')
+            ->withTimestamps();
     }
 
     // Accessors
     public function getLogoUrlAttribute(): string
     {
-        return $this->logo 
-            ? asset('storage/' . $this->logo) 
+        return $this->logo
+            ? asset('storage/' . $this->logo)
             : 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=00595c&color=fff&size=100';
     }
 
     public function getCoverImageUrlAttribute(): string
     {
-        return $this->cover_image 
-            ? asset('storage/' . $this->cover_image) 
+        return $this->cover_image
+            ? asset('storage/' . $this->cover_image)
             : asset('images/default-cover.jpg');
     }
 
@@ -99,8 +94,8 @@ class Team extends Model
             'draws' => $this->draws,
             'losses' => $this->losses,
             'total' => $this->total_matches,
-            'win_rate' => $this->total_matches > 0 
-                ? round(($this->wins / $this->total_matches) * 100, 1) 
+            'win_rate' => $this->total_matches > 0
+                ? round(($this->wins / $this->total_matches) * 100, 1)
                 : 0,
         ];
     }
@@ -111,18 +106,72 @@ class Team extends Model
         return $this->status === 'active';
     }
 
-    public function canAddPlayer(): bool
+
+
+    public function tournaments(): BelongsToMany
     {
-        return $this->players()->count() < $this->max_players;
+        return $this->belongsToMany(Tournament::class, 'tournament_team')
+            ->withPivot(['status', 'group', 'points', 'registered_at', 'approved_at'])
+            ->withTimestamps();
     }
 
+    /**
+     * Players with active status only.
+     */
+    public function activePlayers()
+    {
+        return $this->belongsToMany(User::class, 'team_player')
+            ->wherePivot('status', 'active')
+            ->withPivot('role', 'jersey_number', 'status', 'joined_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Pending join requests.
+     */
+    public function joinRequests()
+    {
+        return $this->belongsToMany(User::class, 'team_player')
+            ->wherePivot('status', 'pending')
+            ->withPivot('role', 'status', 'joined_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Check if a user has a pending request.
+     */
+    public function hasPendingRequest(User $user): bool
+    {
+        return $this->players()
+            ->where('user_id', $user->id)
+            ->wherePivot('status', 'pending')
+            ->exists();
+    }
+
+    /**
+     * Check if a user is an active member.
+     */
     public function hasPlayer(User $user): bool
     {
-        return $this->players()->where('user_id', $user->id)->exists();
+        return $this->players()
+            ->where('user_id', $user->id)
+            ->wherePivot('status', 'active')
+            ->exists();
     }
 
+    /**
+     * Check if a user is the captain.
+     */
     public function isCaptain(User $user): bool
     {
         return $this->captain_id === $user->id;
+    }
+
+    /**
+     * Check if team can accept more players.
+     */
+    public function canAddPlayer(): bool
+    {
+        return $this->activePlayers()->count() < $this->max_players;
     }
 }

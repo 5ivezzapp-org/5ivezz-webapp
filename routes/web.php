@@ -55,14 +55,34 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
-    
+
+    // Join requests
+    Route::post('teams/{team}/request-join', [App\Http\Controllers\Player\TeamController::class, 'requestJoin'])
+        ->name('teams.request-join');
+
+    Route::post('teams/{team}/requests/{user}/approve', [App\Http\Controllers\Player\TeamController::class, 'approveRequest'])
+        ->name('teams.requests.approve');
+
+    Route::post('teams/{team}/requests/{user}/reject', [App\Http\Controllers\Player\TeamController::class, 'rejectRequest'])
+        ->name('teams.requests.reject');
+
+    // Join requests
+    Route::post('teams/{team}/request-join', [App\Http\Controllers\Player\TeamController::class, 'requestJoin'])
+        ->name('teams.request-join');
+
+    Route::post('teams/{team}/requests/{user}/approve', [App\Http\Controllers\Player\TeamController::class, 'approveRequest'])
+        ->name('teams.requests.approve');
+
+    Route::post('teams/{team}/requests/{user}/reject', [App\Http\Controllers\Player\TeamController::class, 'rejectRequest'])
+        ->name('teams.requests.reject');
+
     // Tournament CRUD routes
-    
-    
+
+
     // Additional actions
     Route::post('tournaments/{tournament}/publish', [TournamentController::class, 'publish'])
         ->name('tournaments.publish');
-    
+
 });
 
 // Public tournament view (optional)
@@ -76,38 +96,56 @@ Route::get('tournaments/{tournament}', [TournamentController::class, 'show'])
 |--------------------------------------------------------------------------
 */
 Route::prefix('organizer')->name('organizer.')->group(function () {
-    
+
     // Guest routes (not logged in)
     Route::middleware('organizer.guest')->group(function () {
         // Registration
         Route::get('register', [AuthController::class, 'showRegistrationForm'])->name('register');
         Route::post('register', [AuthController::class, 'register']);
-        
+
         // Login
         Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
         Route::post('login', [AuthController::class, 'login']);
-        
+
         // Password Reset
         Route::get('forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
         Route::post('forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
         Route::get('reset-password/{token}', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
         Route::post('reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
     });
-    
+
     // Authenticated routes
     Route::middleware('organizer.auth')->group(function () {
         // Dashboard
         Route::get('dashboard', [AuthController::class, 'dashboard'])->name('dashboard');
-        
+
         // Profile
         Route::get('profile', [AuthController::class, 'profile'])->name('profile');
         Route::put('profile', [AuthController::class, 'updateProfile'])->name('profile.update');
         Route::put('profile/password', [AuthController::class, 'updatePassword'])->name('profile.password');
         Route::post('profile/logo', [AuthController::class, 'updateLogo'])->name('profile.logo');
-        
+
         // Tournament Management
         Route::resource('tournaments', TournamentController::class);
-        
+
+        Route::get(
+            'tournaments/{tournament}/teams/{team}/review',
+            [TournamentController::class, 'reviewTeam']
+        )
+            ->name('tournaments.teams.review');
+
+        Route::post(
+            'tournaments/{tournament}/teams/{team}/approve',
+            [TournamentController::class, 'approveRegistration']
+        )
+            ->name('tournaments.teams.approve');
+
+        Route::post(
+            'tournaments/{tournament}/teams/{team}/reject',
+            [TournamentController::class, 'rejectRegistration']
+        )
+            ->name('tournaments.teams.reject');
+
         // Logout
         Route::post('logout', [AuthController::class, 'logout'])->name('logout');
     });
@@ -119,7 +157,7 @@ Route::prefix('organizer')->name('organizer.')->group(function () {
 |--------------------------------------------------------------------------
 */
 Route::prefix('player')->name('player.')->group(function () {
-    
+
     // Guest routes (not logged in)
     Route::middleware('guest')->group(function () {
         Route::get('register', [App\Http\Controllers\Player\AuthController::class, 'showRegistrationForm'])->name('register');
@@ -127,28 +165,28 @@ Route::prefix('player')->name('player.')->group(function () {
         Route::get('login', [App\Http\Controllers\Player\AuthController::class, 'showLoginForm'])->name('login');
         Route::post('login', [App\Http\Controllers\Player\AuthController::class, 'login']);
     });
-    
+
     // Authenticated routes
     Route::middleware('auth')->group(function () {
         // Dashboard
         Route::get('dashboard', [App\Http\Controllers\Player\AuthController::class, 'dashboard'])->name('dashboard');
-        
+
         // Profile
         Route::get('profile', [App\Http\Controllers\Player\AuthController::class, 'profile'])->name('profile');
         Route::put('profile', [App\Http\Controllers\Player\AuthController::class, 'updateProfile'])->name('profile.update');
         Route::put('profile/password', [App\Http\Controllers\Player\AuthController::class, 'updatePassword'])->name('profile.password');
         Route::post('profile/avatar', [App\Http\Controllers\Player\AuthController::class, 'uploadAvatar'])->name('profile.avatar');
-        
+
         // Teams
         Route::get('teams', [App\Http\Controllers\Player\TeamController::class, 'index'])->name('teams.index');
         Route::get('teams/create', [App\Http\Controllers\Player\TeamController::class, 'create'])->name('teams.create');
         Route::post('teams', [App\Http\Controllers\Player\TeamController::class, 'store'])->name('teams.store');
-        
+
         Route::get('teams/{team}/edit', [App\Http\Controllers\Player\TeamController::class, 'edit'])->name('teams.edit');
         Route::put('teams/{team}', [App\Http\Controllers\Player\TeamController::class, 'update'])->name('teams.update');
         Route::post('teams/join', [App\Http\Controllers\Player\TeamController::class, 'join'])->name('teams.join');
         Route::delete('teams/{team}/leave', [App\Http\Controllers\Player\TeamController::class, 'leave'])->name('teams.leave');
-        
+
         // Logout
         Route::post('logout', [App\Http\Controllers\Player\AuthController::class, 'logout'])->name('logout');
     });
@@ -195,3 +233,21 @@ Route::prefix('achievements')->group(function () {
     Route::get('/player/{playerId}/summary', [AchievementController::class, 'getPlayerAchievementsSummary']);
     Route::post('/player/{playerId}/check', [AchievementController::class, 'checkAndCreateAchievements']);
 });
+
+Route::middleware('auth')->group(function () {
+    // Tournaments (browse + register)
+    Route::get('tournaments', [App\Http\Controllers\Player\TournamentController::class, 'index'])
+        ->name('tournaments.index');
+
+    Route::post('tournaments/{tournament}/register', [App\Http\Controllers\Player\TournamentController::class, 'register'])
+        ->name('tournaments.register');
+    Route::delete('tournaments/{tournament}/withdraw', [App\Http\Controllers\Player\TournamentController::class, 'withdraw'])
+        ->name('tournaments.withdraw');
+
+    Route::post('tournaments/{tournament}/teams/{team}/approve', [TournamentController::class, 'approveTeam'])
+        ->name('tournaments.approve-team');
+    Route::post('tournaments/{tournament}/teams/{team}/reject', [TournamentController::class, 'rejectTeam'])
+        ->name('tournaments.reject-team');
+});
+Route::get('tournaments/{tournament}', [App\Http\Controllers\Player\TournamentController::class, 'show'])
+    ->name('player.tournaments.show');

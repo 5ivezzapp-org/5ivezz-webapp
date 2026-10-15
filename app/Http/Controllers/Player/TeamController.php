@@ -31,77 +31,102 @@ class TeamController extends Controller
         return view('player.teams.index', compact('teams'));
     }
 
-    /**
-     * Display team details with all real data.
-     */
-    public function show(Team $team)
-    {
-        $team->load([
-            'players' => function ($query) {
-                $query->wherePivot('status', 'active')
-                    ->orderBy('pivot_role', 'desc')
-                    ->orderBy('first_name');
-            },
-            'captain'
-        ]);
+/**
+ * Display team details with all real data.
+ */
+public function show(Team $team)
+{
+    $team->load([
+        'players' => function ($query) {
+            $query->wherePivot('status', 'active')
+                ->orderBy('pivot_role', 'desc')
+                ->orderBy('first_name');
+        },
+        'captain'
+    ]);
 
-        // Get all players with their roles
-        $players = $team->players;
+    // Get all active players
+    $players = $team->players;
 
-        // Check if current user is a member
-        $isMember = Auth::check() && $team->hasPlayer(Auth::user());
-
-        // Get team role for current user
-        $userRole = null;
-        if (Auth::check() && $isMember) {
-            $teamPlayer = $team->players()->where('user_id', Auth::id())->first();
-            $userRole = $teamPlayer ? $teamPlayer->pivot->role : null;
-        }
-
-        // Get team statistics
-        $teamStats = $this->getTeamStats($team);
-
-        // Get upcoming matches
-        $upcomingMatches = $this->getUpcomingMatches($team);
-
-        // Get recent matches
-        $recentMatches = $this->getRecentMatches($team);
-
-        // Get current tournament
-        $currentTournament = $this->getCurrentTournament($team);
-
-        // Get tournament history
-        $tournamentHistory = $this->getTournamentHistory($team);
-
-        // Get top scorers
-        $topScorers = $this->getTopScorers($team);
-
-        // Get team achievements
-        $achievements = Achievement::where('team_id', $team->id)
-            ->where('status', 'active')
-            ->orderBy('achieved_date', 'desc')
-            ->limit(5)
-            ->get();
-
-        // Get player count
-        $playerCount = $players->count();
-
-        return view('player.teams.show', compact(
-            'team',
-            'players',
-            'isMember',
-            'userRole',
-            'teamStats',
-            'upcomingMatches',
-            'recentMatches',
-            'currentTournament',
-            'tournamentHistory',
-            'topScorers',
-            'achievements',
-            'playerCount'
-        ));
+    // Set avatar URLs on each player (fallback to UI Avatars)
+    foreach ($players as $player) {
+        $player->avatar_url = $player->avatar
+            ? asset('storage/' . $player->avatar)
+            : 'https://ui-avatars.com/api/?name=' . urlencode($player->full_name)
+              . '&size=80&background=0D9488&color=fff&bold=true';
     }
 
+    // Auth-aware flags
+    $isMember  = Auth::check() && $team->hasPlayer(Auth::user());
+    $isCaptain = Auth::check() && $team->isCaptain(Auth::user());
+
+    // Get team role for current user
+    $userRole = null;
+    if (Auth::check() && $isMember) {
+        $teamPlayer = $team->players()->where('user_id', Auth::id())->first();
+        $userRole = $teamPlayer ? $teamPlayer->pivot->role : null;
+    }
+
+    // Has the current user already requested to join?
+    $hasPendingRequest = Auth::check()
+        && !$isMember
+        && $team->hasPendingRequest(Auth::user());
+
+    // Join requests (only loaded for captain)
+    $joinRequests = $isCaptain
+        ? $team->joinRequests()
+            ->orderBy('team_player.created_at', 'desc')
+            ->get()
+        : collect();
+
+    // Set avatar URLs on each requester too
+    foreach ($joinRequests as $requester) {
+        $requester->avatar_url = $requester->avatar
+            ? asset('storage/' . $requester->avatar)
+            : 'https://ui-avatars.com/api/?name=' . urlencode($requester->full_name)
+              . '&size=80&background=0D9488&color=fff&bold=true';
+    }
+
+    // Stats and related data
+    $teamStats          = $this->getTeamStats($team);
+    $upcomingMatches    = $this->getUpcomingMatches($team);
+    $recentMatches      = $this->getRecentMatches($team);
+    $currentTournament  = $this->getCurrentTournament($team);
+    $tournamentHistory  = $this->getTournamentHistory($team);
+    $topScorers         = $this->getTopScorers($team);
+
+    $achievements = Achievement::where('team_id', $team->id)
+        ->where('status', 'active')
+        ->orderBy('achieved_date', 'desc')
+        ->limit(5)
+        ->get();
+
+    $playerCount = $players->count();
+
+    // Team logo URL with fallback
+    $team->logo_url = $team->logo
+        ? asset('storage/' . $team->logo)
+        : 'https://ui-avatars.com/api/?name=' . urlencode($team->name)
+          . '&size=80&background=00595c&color=fff&bold=true';
+
+    return view('player.teams.show', compact(
+        'team',
+        'players',
+        'isMember',
+        'isCaptain',
+        'userRole',
+        'hasPendingRequest',
+        'joinRequests',
+        'teamStats',
+        'upcomingMatches',
+        'recentMatches',
+        'currentTournament',
+        'tournamentHistory',
+        'topScorers',
+        'achievements',
+        'playerCount'
+    ));
+}
     /**
      * Show team creation form.
      */
@@ -312,9 +337,9 @@ class TeamController extends Controller
     protected function getTeamStats(Team $team)
     {
         $matches = Matches::where(function ($query) use ($team) {
-                $query->where('home_team_id', $team->id)
-                    ->orWhere('away_team_id', $team->id);
-            })
+            $query->where('home_team_id', $team->id)
+                ->orWhere('away_team_id', $team->id);
+        })
             ->where('status', 'completed')
             ->get();
 
@@ -368,9 +393,9 @@ class TeamController extends Controller
     protected function getUpcomingMatches(Team $team)
     {
         return Matches::where(function ($query) use ($team) {
-                $query->where('home_team_id', $team->id)
-                    ->orWhere('away_team_id', $team->id);
-            })
+            $query->where('home_team_id', $team->id)
+                ->orWhere('away_team_id', $team->id);
+        })
             ->where('status', 'scheduled')
             ->where('match_datetime', '>=', Carbon::now())
             ->orderBy('match_datetime', 'asc')
@@ -385,9 +410,9 @@ class TeamController extends Controller
     protected function getRecentMatches(Team $team)
     {
         return Matches::where(function ($query) use ($team) {
-                $query->where('home_team_id', $team->id)
-                    ->orWhere('away_team_id', $team->id);
-            })
+            $query->where('home_team_id', $team->id)
+                ->orWhere('away_team_id', $team->id);
+        })
             ->where('status', 'completed')
             ->orderBy('match_datetime', 'desc')
             ->limit(5)
@@ -402,9 +427,9 @@ class TeamController extends Controller
     {
         // Find active tournament where team is participating
         $tournamentMatch = Matches::where(function ($query) use ($team) {
-                $query->where('home_team_id', $team->id)
-                    ->orWhere('away_team_id', $team->id);
-            })
+            $query->where('home_team_id', $team->id)
+                ->orWhere('away_team_id', $team->id);
+        })
             ->whereNotNull('tournament_id')
             ->where('match_datetime', '>=', Carbon::now())
             ->orderBy('match_datetime', 'asc')
@@ -416,9 +441,9 @@ class TeamController extends Controller
 
         // Check if team has any tournament matches
         $tournamentMatch = Matches::where(function ($query) use ($team) {
-                $query->where('home_team_id', $team->id)
-                    ->orWhere('away_team_id', $team->id);
-            })
+            $query->where('home_team_id', $team->id)
+                ->orWhere('away_team_id', $team->id);
+        })
             ->whereNotNull('tournament_id')
             ->where('status', '!=', 'cancelled')
             ->orderBy('match_datetime', 'desc')
@@ -437,9 +462,9 @@ class TeamController extends Controller
     protected function getTournamentHistory(Team $team)
     {
         $tournamentIds = Matches::where(function ($query) use ($team) {
-                $query->where('home_team_id', $team->id)
-                    ->orWhere('away_team_id', $team->id);
-            })
+            $query->where('home_team_id', $team->id)
+                ->orWhere('away_team_id', $team->id);
+        })
             ->whereNotNull('tournament_id')
             ->distinct('tournament_id')
             ->pluck('tournament_id');
@@ -471,5 +496,99 @@ class TeamController extends Controller
             ->get();
 
         return $goals;
+    }
+
+    /**
+     * Request to join a team (pending captain approval).
+     */
+    public function requestJoin(Team $team)
+    {
+        $user = Auth::user();
+
+        // Already a member?
+        if ($team->hasPlayer($user)) {
+            return back()->with('info', 'You are already a member of this team.');
+        }
+
+        // Already requested?
+        if ($team->hasPendingRequest($user)) {
+            return back()->with('info', 'Your join request is already pending approval.');
+        }
+
+        // Team is full?
+        if (!$team->canAddPlayer()) {
+            return back()->withErrors(['error' => 'This team has reached its maximum player limit.']);
+        }
+
+        // If user is already in another team, remove them from it first? Optional.
+        // For now, just block:
+        if ($user->team_id && $user->team_id !== $team->id) {
+            return back()->withErrors(['error' => 'You are already part of another team. Leave it first.']);
+        }
+
+        $team->players()->attach($user->id, [
+            'role' => 'player',
+            'status' => 'pending',
+            'joined_at' => now(),
+        ]);
+
+        return back()->with('success', 'Join request sent! The captain will review it shortly.');
+    }
+
+    /**
+     * Approve a pending join request (captain only).
+     */
+    public function approveRequest(Team $team, User $user)
+    {
+        $authUser = Auth::user();
+
+        if (!$team->isCaptain($authUser)) {
+            abort(403, 'Only the captain can approve requests.');
+        }
+
+        // Confirm the request exists and is pending
+        $pivot = $team->players()->where('user_id', $user->id)->first();
+        if (!$pivot || $pivot->pivot->status !== 'pending') {
+            return back()->withErrors(['error' => 'No pending request found for this user.']);
+        }
+
+        // Team full check
+        if (!$team->canAddPlayer()) {
+            return back()->withErrors(['error' => 'Team is full. Cannot approve more players.']);
+        }
+
+        // Approve
+        $team->players()->updateExistingPivot($user->id, [
+            'status' => 'active',
+            'joined_at' => now(),
+        ]);
+
+        // Set the user's team_id
+        $user->update(['team_id' => $team->id]);
+
+        return back()->with('success', $user->first_name . ' has been added to the team.');
+    }
+
+    /**
+     * Reject a pending join request (captain only).
+     */
+    public function rejectRequest(Team $team, User $user)
+    {
+        $authUser = Auth::user();
+
+        if (!$team->isCaptain($authUser)) {
+            abort(403, 'Only the captain can reject requests.');
+        }
+
+        $pivot = $team->players()->where('user_id', $user->id)->first();
+        if (!$pivot || $pivot->pivot->status !== 'pending') {
+            return back()->withErrors(['error' => 'No pending request found for this user.']);
+        }
+
+        // Detach the record (rejected users can request again if you want;
+        // to permanently block, add a 'rejected' status instead)
+        $team->players()->detach($user->id);
+
+        return back()->with('success', $user->first_name . "'s request has been rejected.");
     }
 }
